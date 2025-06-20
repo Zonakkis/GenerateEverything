@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-    - 'src/Directory.Build.props'
+      - 'src/Directory.Build.props'
 
 jobs:
   build:
@@ -19,20 +19,17 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Restore
-        run: dotnet restore
-
-      - name: Pack Core
+      - name: Pack Core (only for local reference)
         run: dotnet pack src/GenerateEverything.Core/GenerateEverything.Core.csproj -c Release -o ./local-packages
 
       - name: Add local package source
         run: dotnet nuget add source ./local-packages --name local-temp
-    
-      - name: Restore with local package
-        run: dotnet restore --source ./local-packages --source https://api.nuget.org/v3/index.json
-    
+
+      - name: Restore Generator (with local Core)
+        run: dotnet restore src/GenerateEverything.Generator/GenerateEverything.Generator.csproj --source ./local-packages --source https://api.nuget.org/v3/index.json
+
       - name: Pack Generator
         run: dotnet pack src/GenerateEverything.Generator/GenerateEverything.Generator.csproj -c Release -o ./nupkg
-     
-      - name: Push to NuGet
-        run: dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+
+      - name: Push Generator to NuGet
+        run: dotnet nuget push ./nupkg/GenerateEverything.Generator.*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
