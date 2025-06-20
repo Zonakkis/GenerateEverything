@@ -86,12 +86,12 @@ namespace {@enum.Namespace}
     {{
         public static List<string> Names {{ get; }} = new List<string>()
         {{
-            {string.Join(",\n            ", members.Select(field => $"\"{field.Name}\""))}
+            {string.Join(",\n            ", members.Select(member => $"\"{member.Name}\""))}
         }};
 
         public static List<{type}> Members {{ get; }} = new List<{type}>()
         {{
-            {string.Join(",\n            ", members.Select(field => $"{field.ConstantValue ?? 0}"))}
+            {string.Join(",\n            ", members.Select(member => $"{type}.{member.Name}"))}
         }};
 
         public static Dictionary<string, {type}> NameToMember {{ get; }} = new Dictionary<string, {type}>()
