@@ -1,0 +1,104 @@
+﻿using GenerateEverything.Attributes;
+using GenerateEverything.Extensions;
+using GenerateEverything.Nodes;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Linq;
+using System.Threading;
+
+namespace GenerateEverything.SourceGenerators
+{
+    [Generator]
+    internal class EnumInfoGenerator : IIncrementalGenerator 
+    {
+        static bool Predicate(SyntaxNode node, CancellationToken _)
+        {
+            return (node is FieldDeclarationSyntax field && field.AttributeLists.Any())
+               || (node is PropertyDeclarationSyntax property && property.AttributeLists.Any())
+               || (node is MethodDeclarationSyntax method && method.AttributeLists.Any())
+               || (node is ClassDeclarationSyntax @class && @class.AttributeLists.Any());
+        }
+        static ISymbol Transform(GeneratorSyntaxContext context, CancellationToken _)
+        {
+            var node = context.Node;
+            SyntaxNode variable = node;
+            if (node is FieldDeclarationSyntax field)
+                variable = field.Declaration.Variables.FirstOrDefault();
+            else if(node is PropertyDeclarationSyntax property)
+                variable = property;
+            else if(node is MethodDeclarationSyntax method)
+                variable = method;
+            else if (node is ClassDeclarationSyntax @class)
+                variable = @class;
+            return context.SemanticModel.GetDeclaredSymbol(variable, cancellationToken: _);
+        }
+        static bool Where(ISymbol node)
+        {
+            return node != null &&
+            node.GetAttributes().Any(attribute =>
+                attribute.AttributeClass?.ToDisplayString() 
+                == typeof(GetEnumInfo).FullName);
+        }
+        public void Initialize(IncrementalGeneratorInitializationContext context)
+        {
+            var nodes = context.SyntaxProvider
+                .CreateSyntaxProvider(
+                    predicate: Predicate,
+                    transform: Transform)
+                .Where(Where);
+            context.RegisterSourceOutput(nodes, (spc, node) =>
+            {
+                if (node is null) return;
+                var attribute = node.GetAttributes()
+                    .FirstOrDefault(attr =>
+                    {
+                        return attr.AttributeClass?.ToDisplayString() 
+                        == typeof(GetEnumInfo).FullName;
+                    });
+                if (attribute is null) return;
+                var typeArgument = attribute.ConstructorArguments.First();
+                if (typeArgument.Kind == TypedConstantKind.Type 
+                && typeArgument.Value is INamedTypeSymbol enumSymbol
+                && enumSymbol.TypeKind == TypeKind.Enum)
+                {
+                    GenerateEnumInfo(new Enum(enumSymbol), spc);
+                }   
+
+            });
+        }
+
+        public static void GenerateEnumInfo(Enum @enum, SourceProductionContext context)
+        {
+            var members = @enum.Members;
+            string valueType = @enum.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+            var source = $@"
+using {GeneratorInfo.Namespace};
+namespace {@enum.Namespace}
+{{
+    {@enum.Accessibility.ToAccessibilityString()} static class {@enum.Name}Info
+    {{
+        public static List<string> Names {{ get; }} = new List<string>()
+        {{
+            {string.Join(",\n            ", members.Select(field => $"\"{field.Name}\""))}
+        }};
+
+        public static List<{valueType}> Values {{ get; }} = new List<{valueType}>()
+        {{
+            {string.Join(",\n            ", members.Select(field => $"{field.ConstantValue}"))}
+        }};
+
+        public static Dictionary<string, {valueType}> NameToValue {{ get; }} = new Dictionary<string, {valueType}>()
+        {{
+            {string.Join(",\n            ", members.Select(field => $"{{ \"{field.Name}\", {field.ConstantValue} }}"))}
+        }};
+
+        public static Dictionary<{valueType}, {@enum.Name}> ValueToEnum {{ get; }} = new Dictionary<{valueType}, {@enum.Name}>()
+        {{
+            {string.Join(",\n            ", members.Select(field => $"{{ {field.ConstantValue}, {@enum.Name}.{field.Name} }}"))}
+        }};
+    }}
+}}";
+            context.AddSource($"{@enum.Name}Info.g.cs", source);
+        }
+    }
+}
