@@ -8,14 +8,13 @@
 		<RootNamespace>GenerateEverything</RootNamespace>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageReadmeFile>readme.md</PackageReadmeFile>
-		<Version>1.0.11</Version>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<None Include="readme.md" Pack="true" PackagePath="" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="GenerateEverything.Core" Version="1.0.13" GeneratePathProperty="true" />
+		<PackageReference Include="GenerateEverything.Core" Version="$(Version)" />
 		<PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.14.0" PrivateAssets="all" />
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
 	</ItemGroup>
