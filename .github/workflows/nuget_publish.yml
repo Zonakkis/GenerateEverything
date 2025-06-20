@@ -25,11 +25,14 @@ jobs:
       - name: Add local package source
         run: dotnet nuget add source ./local-packages --name local-temp
 
-      - name: Restore Generator (with local Core)
+      - name: Restore Generator
         run: dotnet restore src/GenerateEverything.Generator/GenerateEverything.Generator.csproj --source ./local-packages --source https://api.nuget.org/v3/index.json
 
+      - name: Build Generator
+        run: dotnet build src/GenerateEverything.Generator/GenerateEverything.Generator.csproj -c Release
+      
       - name: Pack Generator
-        run: dotnet pack src/GenerateEverything.Generator/GenerateEverything.Generator.csproj -c Release -o ./nupkg
-
+        run: dotnet pack src/GenerateEverything.Generator/GenerateEverything.Generator.csproj -c Release --no-build -o ./nupkg
+      
       - name: Push Generator to NuGet
         run: dotnet nuget push ./nupkg/GenerateEverything.Generator.*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
