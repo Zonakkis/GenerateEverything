@@ -9,13 +9,14 @@ namespace GenerateEverything.Nodes
     {
         public Enum(INamedTypeSymbol type) : base(type)
         {
-            Type = type.EnumUnderlyingType;
+            Type = type;    
+            ValueType = type.EnumUnderlyingType;
             Members = type.GetMembers().OfType<IFieldSymbol>()
                 .Select(fieldSymbol => new Field(fieldSymbol) as IConstField).ToList();
         }
 
-        public INamedTypeSymbol Type { get; }
-
+        public ITypeSymbol Type { get; }
+        public INamedTypeSymbol ValueType { get; }
         public List<IConstField> Members { get; }
     }
 }
