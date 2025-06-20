@@ -72,6 +72,7 @@ namespace GenerateEverything.SourceGenerators
 
         public static void GenerateEnumInfo(Enum @enum, SourceProductionContext context)
         {
+            var type = @enum.Type.Name;
             var members = @enum.Members ?? new List<IConstField>();
             string valueType = @enum.Type?.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat) ?? typeof(object).Name;
             var source = $@"
@@ -88,19 +89,14 @@ namespace {@enum.Namespace}
             {string.Join(",\n            ", members.Select(field => $"\"{field.Name}\""))}
         }};
 
-        public static List<{valueType}> Values {{ get; }} = new List<{valueType}>()
+        public static List<{type}> Members {{ get; }} = new List<{type}>()
         {{
             {string.Join(",\n            ", members.Select(field => $"{field.ConstantValue ?? 0}"))}
         }};
 
-        public static Dictionary<string, {valueType}> NameToValue {{ get; }} = new Dictionary<string, {valueType}>()
+        public static Dictionary<string, {type}> NameToMember {{ get; }} = new Dictionary<string, {type}>()
         {{
-            {string.Join(",\n            ", members.Select(field => $"{{ \"{field.Name}\", {field.ConstantValue ?? 0} }}"))}
-        }};
-
-        public static Dictionary<{valueType}, {@enum.Name}> ValueToEnum {{ get; }} = new Dictionary<{valueType}, {@enum.Name}>()
-        {{
-            {string.Join(",\n            ", members.Select(field => $"{{ {field.ConstantValue ?? 0}, {@enum.Name}.{field.Name} }}"))}
+            {string.Join(",\n            ", members.Select(member => $"{{ \"{member.Name}\", {type}.{member.Name} }}"))}
         }};
     }}
 }}";
