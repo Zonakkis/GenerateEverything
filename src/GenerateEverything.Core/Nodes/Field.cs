@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis;
 
 namespace GenerateEverything.Nodes
 {
-    public class Field : NodeBase, IField
+    public class Field : NodeBase, IConstField
     {
         public Field()
         {

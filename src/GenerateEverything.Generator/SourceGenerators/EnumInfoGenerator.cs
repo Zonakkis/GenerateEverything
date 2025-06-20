@@ -1,15 +1,18 @@
 ﻿using GenerateEverything.Attributes;
 using GenerateEverything.Extensions;
 using GenerateEverything.Nodes;
+using GenerateEverything.Nodes.Interfaces;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 
 namespace GenerateEverything.SourceGenerators
 {
     [Generator]
-    internal class EnumInfoGenerator : IIncrementalGenerator 
+    internal class EnumInfoGenerator : IIncrementalGenerator
     {
         static bool Predicate(SyntaxNode node, CancellationToken _)
         {
@@ -24,9 +27,9 @@ namespace GenerateEverything.SourceGenerators
             SyntaxNode variable = node;
             if (node is FieldDeclarationSyntax field)
                 variable = field.Declaration.Variables.FirstOrDefault();
-            else if(node is PropertyDeclarationSyntax property)
+            else if (node is PropertyDeclarationSyntax property)
                 variable = property;
-            else if(node is MethodDeclarationSyntax method)
+            else if (node is MethodDeclarationSyntax method)
                 variable = method;
             else if (node is ClassDeclarationSyntax @class)
                 variable = @class;
@@ -36,8 +39,8 @@ namespace GenerateEverything.SourceGenerators
         {
             return node != null &&
             node.GetAttributes().Any(attribute =>
-                attribute.AttributeClass?.ToDisplayString() 
-                == typeof(GetEnumInfo).FullName);
+                attribute.AttributeClass?.ToDisplayString()
+                == $"{nameof(GenerateEverything)}.{nameof(Attributes)}.{nameof(GetEnumInfo)}");
         }
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -52,27 +55,29 @@ namespace GenerateEverything.SourceGenerators
                 var attribute = node.GetAttributes()
                     .FirstOrDefault(attr =>
                     {
-                        return attr.AttributeClass?.ToDisplayString() 
-                        == typeof(GetEnumInfo).FullName;
+                        return attr.AttributeClass?.ToDisplayString()
+                        == $"{nameof(GenerateEverything)}.{nameof(Attributes)}.{nameof(GetEnumInfo)}";
                     });
                 if (attribute is null) return;
                 var typeArgument = attribute.ConstructorArguments.First();
-                if (typeArgument.Kind == TypedConstantKind.Type 
+                if (typeArgument.Kind == TypedConstantKind.Type
                 && typeArgument.Value is INamedTypeSymbol enumSymbol
                 && enumSymbol.TypeKind == TypeKind.Enum)
                 {
                     GenerateEnumInfo(new Enum(enumSymbol), spc);
-                }   
+                }
 
             });
         }
 
         public static void GenerateEnumInfo(Enum @enum, SourceProductionContext context)
         {
-            var members = @enum.Members;
-            string valueType = @enum.Type.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+            var members = @enum.Members ?? new List<IConstField>();
+            string valueType = @enum.Type?.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat) ?? typeof(object).Name;
             var source = $@"
-using {GeneratorInfo.Namespace};
+using {nameof(GenerateEverything)};
+using {nameof(GenerateEverything)}.{nameof(Nodes)};
+using {nameof(GenerateEverything)}.{nameof(Nodes)}.{nameof(Nodes.Interfaces)};
 namespace {@enum.Namespace}
 {{
     {@enum.Accessibility.ToAccessibilityString()} static class {@enum.Name}Info
@@ -84,17 +89,17 @@ namespace {@enum.Namespace}
 
         public static List<{valueType}> Values {{ get; }} = new List<{valueType}>()
         {{
-            {string.Join(",\n            ", members.Select(field => $"{field.ConstantValue}"))}
+            {string.Join(",\n            ", members.Select(field => $"{field.ConstantValue ?? 0}"))}
         }};
 
         public static Dictionary<string, {valueType}> NameToValue {{ get; }} = new Dictionary<string, {valueType}>()
         {{
-            {string.Join(",\n            ", members.Select(field => $"{{ \"{field.Name}\", {field.ConstantValue} }}"))}
+            {string.Join(",\n            ", members.Select(field => $"{{ \"{field.Name}\", {field.ConstantValue ?? 0} }}"))}
         }};
 
         public static Dictionary<{valueType}, {@enum.Name}> ValueToEnum {{ get; }} = new Dictionary<{valueType}, {@enum.Name}>()
         {{
-            {string.Join(",\n            ", members.Select(field => $"{{ {field.ConstantValue}, {@enum.Name}.{field.Name} }}"))}
+            {string.Join(",\n            ", members.Select(field => $"{{ {field.ConstantValue ?? 0}, {@enum.Name}.{field.Name} }}"))}
         }};
     }}
 }}";

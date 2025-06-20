@@ -10,7 +10,7 @@ using System.Threading;
 namespace GenerateEverything.SourceGenerators
 {
     [Generator]
-    public class ClassInfoGenerator : IIncrementalGenerator 
+    public class ClassInfoGenerator : IIncrementalGenerator
     {
         static bool Predicate(SyntaxNode node, CancellationToken _)
         {
@@ -25,11 +25,11 @@ namespace GenerateEverything.SourceGenerators
             SyntaxNode stytaxNode = node;
             if (node is FieldDeclarationSyntax field)
                 stytaxNode = field.Declaration.Variables.FirstOrDefault();
-            else if(node is PropertyDeclarationSyntax property)
+            else if (node is PropertyDeclarationSyntax property)
                 stytaxNode = property;
-            else if(node is MethodDeclarationSyntax method)
+            else if (node is MethodDeclarationSyntax method)
                 stytaxNode = method;
-            else if(node is ClassDeclarationSyntax @class)
+            else if (node is ClassDeclarationSyntax @class)
                 stytaxNode = @class;
             return context.SemanticModel.GetDeclaredSymbol(stytaxNode, cancellationToken: _);
         }
@@ -37,8 +37,8 @@ namespace GenerateEverything.SourceGenerators
         {
             return node != null &&
             node.GetAttributes().Any(attribute =>
-                attribute.AttributeClass?.ToDisplayString() 
-                == typeof(GetClassInfo).FullName);
+                attribute.AttributeClass?.ToDisplayString()
+                == $"{nameof(GenerateEverything)}.{nameof(Attributes)}.{nameof(GetClassInfo)}");
         }
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
@@ -52,15 +52,18 @@ namespace GenerateEverything.SourceGenerators
                 if (node is null) return;
                 var attribute = node.GetAttributes()
                     .FirstOrDefault(attr =>
-                    attr.AttributeClass?.ToDisplayString() == typeof(GetClassInfo).FullName);
+                    {
+                        return attr.AttributeClass?.ToDisplayString()
+                        == $"{nameof(GenerateEverything)}.{nameof(Attributes)}.{nameof(GetClassInfo)}";
+                    });
                 if (attribute is null) return;
                 var typeArgument = attribute.ConstructorArguments.First();
-                if (typeArgument.Kind == TypedConstantKind.Type 
+                if (typeArgument.Kind is TypedConstantKind.Type
                 && typeArgument.Value is INamedTypeSymbol typeSymbol
-                && typeSymbol.TypeKind == TypeKind.Class)
+                && typeSymbol.TypeKind is TypeKind.Class)
                 {
                     GenerateClassInfo(new Class(typeSymbol), spc);
-                }  
+                }
 
             });
         }
@@ -70,9 +73,9 @@ namespace GenerateEverything.SourceGenerators
             var fields = @class.Fields;
             var properties = @class.Properties;
             var source = $@"
-using {GeneratorInfo.Namespace};
-using {GeneratorInfo.Namespace}.Nodes;
-using {GeneratorInfo.Namespace}.Nodes.Interfaces;
+using {nameof(GenerateEverything)};
+using {nameof(GenerateEverything)}.{nameof(Nodes)};
+using {nameof(GenerateEverything)}.{nameof(Nodes)}.{nameof(Nodes.Interfaces)};
 namespace {@class.Namespace}
 {{
     {@class.Accessibility.ToAccessibilityString()} static class {@class.Name}Info

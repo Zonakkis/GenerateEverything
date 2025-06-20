@@ -11,7 +11,7 @@ namespace GenerateEverything.Nodes
         }
         public NodeBase(ISymbol symbol)
         {
-            Namespace = symbol.ContainingNamespace.ToDisplayString();
+            Namespace = symbol.ContainingNamespace?.ToDisplayString() ?? string.Empty;
             Accessibility = symbol.DeclaredAccessibility;
             Name = symbol.Name;
         }

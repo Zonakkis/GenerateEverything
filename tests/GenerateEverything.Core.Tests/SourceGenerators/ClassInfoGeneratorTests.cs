@@ -20,5 +20,18 @@ namespace Core.Tests.SourceGenerators
             Assert.True(new HashSet<string>(reflectionFieldNames)
                 .SetEquals(generatedFieldNames));
         }
+        [Fact]
+        [GetEnumInfo(typeof(StudentType))]
+        public void Members_ShouldBe_Generated()
+        {
+
+            var reflectionFields = typeof(StudentType)
+                .GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var reflectionFieldNames = reflectionFields
+                .Select(f => f.Name).ToList();
+            var generatedFieldNames = StudentTypeInfo.Names;
+            Assert.True(new HashSet<string>(reflectionFieldNames)
+                .SetEquals(generatedFieldNames));
+        }
     }
 }
