@@ -76,6 +76,7 @@ namespace GenerateEverything.SourceGenerators
 using {nameof(GenerateEverything)};
 using {nameof(GenerateEverything)}.{nameof(Nodes)};
 using {nameof(GenerateEverything)}.{nameof(Nodes)}.{nameof(Nodes.Interfaces)};
+using System.Collections.Generic;
 namespace {@class.Namespace}
 {{
     {@class.Accessibility.ToAccessibilityString()} static class {@class.Name}Info
