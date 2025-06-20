@@ -1,0 +1,34 @@
+name: Publish NuGet Packages
+
+on:
+  push:
+    paths:
+    - 'src/Directory.Build.props'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Pack A
+        run: dotnet pack ./src/A/A.csproj -c Release -o ./local-packages
+
+      - name: Add local package source
+        run: dotnet nuget add source ./local-packages --name local-temp
+
+      - name: Pack B
+        run: dotnet pack ./src/B/B.csproj -c Release -o ./nupkg
+
+      - name: Push to NuGet
+        run: dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
